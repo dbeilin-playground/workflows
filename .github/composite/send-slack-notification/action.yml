@@ -1,0 +1,101 @@
+name: "Slack Notification"
+description: "Send Slack notifications for GitHub Actions workflows"
+
+inputs:
+  slack_bot_token:
+    description: "Slack bot token"
+    required: true
+  github_user:
+    description: "GitHub username to send message to (looked up via email mapping)"
+    required: false
+  channel_id:
+    description: "Slack channel ID (for channel notifications, not user DMs)"
+    required: false
+  message:
+    description: "Message to send to Slack"
+    required: true
+  blocks:
+    description: "Optional Slack blocks for advanced message formatting"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [[ -n "${{ inputs.github_user }}" && -n "${{ inputs.channel_id }}" ]]; then
+          echo "Error: Cannot specify both github_user and channel_id"
+          exit 1
+        fi
+        if [[ -z "${{ inputs.github_user }}" && -z "${{ inputs.channel_id }}" ]]; then
+          echo "Error: Must specify either github_user or channel_id"
+          exit 1
+        fi
+
+    - name: Lookup user email
+      if: inputs.github_user != ''
+      id: lookup_email
+      shell: bash
+      run: |
+        MAPPING_FILE="${{ github.action_path }}/user-mapping.yml"
+        
+        if [[ ! -f "$MAPPING_FILE" ]]; then
+          echo "Error: User mapping file not found at $MAPPING_FILE"
+          exit 1
+        fi
+        
+        EMAIL=$(sed -n "s/^${{ inputs.github_user }}: //p" "$MAPPING_FILE")
+        
+        if [[ -z "$EMAIL" ]]; then
+          echo "Error: No email mapping found for GitHub user: ${{ inputs.github_user }}"
+          exit 1
+        fi
+        
+        echo "email=$EMAIL" >> $GITHUB_OUTPUT
+
+    - name: Find Slack user by email
+      if: inputs.github_user != ''
+      id: slack_user
+      uses: slackapi/slack-github-action@v2.1
+      with:
+        method: users.lookupByEmail
+        token: ${{ inputs.slack_bot_token }}
+        payload: |
+          email: ${{ steps.lookup_email.outputs.email }}
+
+    - name: Check Slack lookup success
+      if: inputs.github_user != '' && !steps.slack_user.outputs.ok
+      shell: bash
+      run: |
+        echo "Error: Failed to find Slack user for email: ${{ steps.lookup_email.outputs.email }}"
+        exit 1
+
+    - name: Extract Slack user ID
+      if: inputs.github_user != ''
+      id: user_id
+      shell: bash
+      run: |
+        SLACK_USER_ID=$(echo '${{ steps.slack_user.outputs.response }}' | jq -r '.user.id')
+        echo "slack_user_id=$SLACK_USER_ID" >> $GITHUB_OUTPUT
+
+    - name: Determine channel
+      id: channel
+      shell: bash
+      run: |
+        if [[ -n "${{ inputs.github_user }}" ]]; then
+          echo "value=${{ steps.user_id.outputs.slack_user_id }}" >> $GITHUB_OUTPUT
+        else
+          echo "value=${{ inputs.channel_id }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Send Slack notification
+      uses: slackapi/slack-github-action@v2.1
+      with:
+        method: chat.postMessage
+        token: ${{ inputs.slack_bot_token }}
+        payload: |
+          channel: "${{ steps.channel.outputs.value }}"
+          text: "${{ inputs.message }}"
+          blocks:
+          ${{ inputs.blocks }}
