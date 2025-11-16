@@ -85,8 +85,10 @@ runs:
       id: user_id
       shell: bash
       run: |
-        SLACK_USER_ID=$(echo '${{ steps.slack_user.outputs.response }}' | jq -r '.user.id')
+        SLACK_USER_ID=$(python3 -c "import json, os; data = json.loads(os.environ['RESPONSE']); print(data['user']['id'])")
         echo "slack_user_id=$SLACK_USER_ID" >> $GITHUB_OUTPUT
+      env:
+        RESPONSE: ${{ steps.slack_user.outputs.response }}
 
     - name: Determine channel
       id: channel
