@@ -45,7 +45,7 @@ runs:
           exit 1
         fi
         
-        EMAIL=$(sed -n "s/^${{ inputs.github_user }}: //p" "$MAPPING_FILE")
+        EMAIL=$(grep "^${{ inputs.github_user }}:" "$MAPPING_FILE" | cut -d':' -f2- | xargs)
         
         if [[ -z "$EMAIL" ]]; then
           echo "Error: No email mapping found for GitHub user: ${{ inputs.github_user }}"
