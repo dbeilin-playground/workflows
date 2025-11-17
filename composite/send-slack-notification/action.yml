@@ -11,6 +11,7 @@ inputs:
   channel_id:
     description: "Slack channel ID (for channel notifications, not user DMs)"
     required: false
+    default: "alerts"
   message:
     description: "Message to send to Slack"
     required: true
@@ -21,21 +22,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Validate inputs
-      shell: bash
-      run: |
-        if [[ -n "$GITHUB_USER_INPUT" && -n "$CHANNEL_ID_INPUT" ]]; then
-          echo "Error: Cannot specify both github_user and channel_id"
-          exit 1
-        fi
-        if [[ -z "$GITHUB_USER_INPUT" && -z "$CHANNEL_ID_INPUT" ]]; then
-          echo "Error: Must specify either github_user or channel_id"
-          exit 1
-        fi
-      env:
-        GITHUB_USER_INPUT: ${{ inputs.github_user }}
-        CHANNEL_ID_INPUT: ${{ inputs.channel_id }}
-
     - name: Lookup user email
       if: inputs.github_user != ''
       id: lookup_email
