@@ -30,12 +30,12 @@ runs:
       id: lookup_email
       shell: bash
       run: |
-        if [[ -z "$USER_MAPPING" ]]; then
+        if [[ -z "$GH_TO_SP_USER_MAPPING" ]]; then
           echo "Error: User mapping not loaded"
           exit 1
         fi
         
-        EMAIL=$(python3 -c "import json, os; data = json.loads(os.environ['USER_MAPPING']); print(data.get('$GITHUB_USER', ''))")
+        EMAIL=$(python3 -c "import json, os; data = json.loads(os.environ['GH_TO_SP_USER_MAPPING']); print(data.get('$GITHUB_USER', ''))")
         
         if [[ -z "$EMAIL" ]]; then
           echo "Error: No email mapping found for GitHub user: $GITHUB_USER"
@@ -45,7 +45,6 @@ runs:
         echo "email=$EMAIL" >> $GITHUB_OUTPUT
       env:
         GITHUB_USER: ${{ inputs.github_user }}
-        USER_MAPPING: ${{ env.GH_TO_SP_USER_MAPPING }}
 
     - name: Find Slack user by email
       if: inputs.github_user != ''
