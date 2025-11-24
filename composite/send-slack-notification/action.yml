@@ -27,6 +27,12 @@ runs:
       id: lookup_email
       shell: bash
       run: |
+        echo ${{ vars.GH_TO_SP_USER_MAPPING }}
+        USER_MAPPING='${{ vars.GH_TO_SP_USER_MAPPING }}'
+
+        echo "USER_MAPPING=${{ vars.GH_TO_SP_USER_MAPPING }}" >> $GITHUB_ENV
+        echo $GITHUB_ENV
+
         if [[ -z "$USER_MAPPING" ]]; then
           echo "Error: GH_TO_SP_USER_MAPPING environment variable not found"
           exit 1
@@ -42,7 +48,7 @@ runs:
         echo "email=$EMAIL" >> $GITHUB_OUTPUT
       env:
         GITHUB_USER: ${{ inputs.github_user }}
-        USER_MAPPING: ${{ vars.GH_TO_SP_USER_MAPPING }}
+        # USER_MAPPING: ${{ vars.GH_TO_SP_USER_MAPPING }}
 
     - name: Find Slack user by email
       if: inputs.github_user != ''
