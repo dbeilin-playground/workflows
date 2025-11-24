@@ -27,11 +27,7 @@ runs:
       id: lookup_email
       shell: bash
       run: |
-        echo ${{ env.GH_TO_SP_USER_MAPPING }}
-        USER_MAPPING='${{ env.GH_TO_SP_USER_MAPPING }}'
-
-        echo "USER_MAPPING=${{ env.GH_TO_SP_USER_MAPPING }}" >> $GITHUB_ENV
-        echo $GITHUB_ENV
+        echo ${{ github.actor }}
 
         if [[ -z "$USER_MAPPING" ]]; then
           echo "Error: GH_TO_SP_USER_MAPPING environment variable not found"
