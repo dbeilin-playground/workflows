@@ -1,0 +1,11 @@
+name: "Load User Mapping"
+description: "Loads GitHub to Slack email mapping into environment"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Load user mapping to environment
+      shell: bash
+      run: |
+        MAPPING_CONTENT=$(cat "${{ github.action_path }}/user-mapping.json")
+        echo "GH_TO_SP_USER_MAPPING=$MAPPING_CONTENT" >> $GITHUB_ENV
