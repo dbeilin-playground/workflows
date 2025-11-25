@@ -2,7 +2,7 @@ name: "Load User Mapping"
 description: "Loads GitHub to Slack email mapping and optionally resolves a specific GitHub user"
 
 inputs:
-  github_actor:
+  username:
     description: "GitHub username to resolve (looks up email from mapping)"
     required: false
     default: ""
@@ -26,7 +26,7 @@ runs:
 
     - name: Resolve GitHub user
       id: resolve_user
-      if: inputs.github_actor != ''
+      if: inputs.username != ''
       shell: bash
       run: |
         if [[ -z "$GH_TO_SP_USER_MAPPING" ]]; then
