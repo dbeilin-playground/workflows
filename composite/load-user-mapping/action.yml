@@ -1,5 +1,19 @@
 name: "Load User Mapping"
-description: "Loads GitHub to Slack email mapping into environment"
+description: "Loads GitHub to Slack email mapping and optionally resolves a specific GitHub user"
+
+inputs:
+  github_actor:
+    description: "GitHub username to resolve (looks up email from mapping)"
+    required: false
+    default: ""
+
+outputs:
+  email:
+    description: "Email address for the specified github_actor (only set if github_actor input provided)"
+    value: ${{ steps.resolve_user.outputs.email }}
+  user_found:
+    description: "Whether the github_actor was found in mapping (true/false, only set if github_actor input provided)"
+    value: ${{ steps.resolve_user.outputs.user_found }}
 
 runs:
   using: "composite"
@@ -9,3 +23,29 @@ runs:
       run: |
         MAPPING_CONTENT=$(python3 -c "import json; print(json.dumps(json.load(open('${{ github.action_path }}/user-mapping.json'))))")
         echo "GH_TO_SP_USER_MAPPING=$MAPPING_CONTENT" >> $GITHUB_ENV
+
+    - name: Resolve GitHub user
+      id: resolve_user
+      if: inputs.github_actor != ''
+      shell: bash
+      run: |
+        if [[ -z "$GH_TO_SP_USER_MAPPING" ]]; then
+          echo "Error: User mapping not loaded"
+          exit 1
+        fi
+        
+        # Look up the email for the GitHub user
+        EMAIL=$(python3 -c "import json, os, sys; data = json.loads(os.environ['GH_TO_SP_USER_MAPPING']); print(data.get('$GITHUB_ACTOR', ''))")
+        
+        if [[ -z "$EMAIL" ]]; then
+          echo "user_found=false" >> $GITHUB_OUTPUT
+          echo "email=" >> $GITHUB_OUTPUT
+          echo "::error::No email mapping found for GitHub user: $GITHUB_ACTOR"
+          exit 1
+        fi
+        
+        echo "user_found=true" >> $GITHUB_OUTPUT
+        echo "email=$EMAIL" >> $GITHUB_OUTPUT
+        echo "Successfully resolved $GITHUB_ACTOR to $EMAIL"
+      env:
+        GITHUB_ACTOR: ${{ inputs.github_actor }}
