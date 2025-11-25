@@ -22,29 +22,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Load user mapping
-      uses: dbeilin-playground/workflows/composite/load-user-mapping@main
-
-    - name: Lookup user email
+    - name: Load user mapping and resolve user
       if: inputs.github_user != ''
-      id: lookup_email
-      shell: bash
-      run: |
-        if [[ -z "$GH_TO_SP_USER_MAPPING" ]]; then
-          echo "Error: User mapping not loaded"
-          exit 1
-        fi
-        
-        EMAIL=$(python3 -c "import json, os; data = json.loads(os.environ['GH_TO_SP_USER_MAPPING']); print(data.get('$GITHUB_USER', ''))")
-        
-        if [[ -z "$EMAIL" ]]; then
-          echo "Error: No email mapping found for GitHub user: $GITHUB_USER"
-          exit 1
-        fi
-        
-        echo "email=$EMAIL" >> $GITHUB_OUTPUT
-      env:
-        GITHUB_USER: ${{ inputs.github_user }}
+      id: user_mapping
+      uses: dbeilin-playground/workflows/composite/load-user-mapping@main
+      with:
+        username: ${{ inputs.github_user }}
 
     - name: Find Slack user by email
       if: inputs.github_user != ''
@@ -54,7 +37,7 @@ runs:
         method: users.lookupByEmail
         token: ${{ inputs.slack_bot_token }}
         payload: |
-          email: ${{ steps.lookup_email.outputs.email }}
+          email: ${{ steps.user_mapping.outputs.email }}
 
     - name: Check Slack lookup success
       if: inputs.github_user != ''
@@ -66,7 +49,7 @@ runs:
         fi
       env:
         SLACK_OK: ${{ steps.slack_user.outputs.ok }}
-        USER_EMAIL: ${{ steps.lookup_email.outputs.email }}
+        USER_EMAIL: ${{ steps.user_mapping.outputs.email }}
 
     - name: Extract Slack user ID
       if: inputs.github_user != ''
