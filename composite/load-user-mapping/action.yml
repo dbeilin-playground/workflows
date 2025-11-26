@@ -9,10 +9,10 @@ inputs:
 
 outputs:
   email:
-    description: "Email address for the specified github_actor (only set if github_actor input provided)"
+    description: "Email address for the specified username (only set if username input provided)"
     value: ${{ steps.resolve_user.outputs.email }}
   user_found:
-    description: "Whether the github_actor was found in mapping (true/false, only set if github_actor input provided)"
+    description: "Whether the username was found in mapping (true/false, only set if username input provided)"
     value: ${{ steps.resolve_user.outputs.user_found }}
 
 runs:
@@ -35,17 +35,17 @@ runs:
         fi
         
         # Look up the email for the GitHub user
-        EMAIL=$(python3 -c "import json, os, sys; data = json.loads(os.environ['GH_TO_SP_USER_MAPPING']); print(data.get('$GITHUB_ACTOR', ''))")
+        EMAIL=$(python3 -c "import json, os, sys; data = json.loads(os.environ['GH_TO_SP_USER_MAPPING']); print(data.get('$GITHUB_USERNAME', ''))")
         
         if [[ -z "$EMAIL" ]]; then
           echo "user_found=false" >> $GITHUB_OUTPUT
           echo "email=" >> $GITHUB_OUTPUT
-          echo "::error::No email mapping found for GitHub user: $GITHUB_ACTOR"
+          echo "::error::No email mapping found for GitHub user: $GITHUB_USERNAME"
           exit 1
         fi
         
         echo "user_found=true" >> $GITHUB_OUTPUT
         echo "email=$EMAIL" >> $GITHUB_OUTPUT
-        echo "Successfully resolved $GITHUB_ACTOR to $EMAIL"
+        echo "Successfully resolved $GITHUB_USERNAME to $EMAIL"
       env:
-        GITHUB_ACTOR: ${{ inputs.github_actor }}
+        GITHUB_USERNAME: ${{ inputs.username }}

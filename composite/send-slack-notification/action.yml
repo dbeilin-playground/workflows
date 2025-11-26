@@ -22,8 +22,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Load user mapping and resolve user
-      if: inputs.github_user != ''
+    - name: Load user mapping
       id: user_mapping
       uses: dbeilin-playground/workflows/composite/load-user-mapping@main
       with:
