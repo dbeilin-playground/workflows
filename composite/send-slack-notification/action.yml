@@ -29,7 +29,7 @@ runs:
         username: ${{ inputs.github_user }}
 
     - name: Find Slack user by email
-      if: inputs.github_user != ''
+      if: steps.user_mapping.outputs.user_found == 'true'
       id: slack_user
       uses: slackapi/slack-github-action@v2.1
       with:
@@ -38,20 +38,8 @@ runs:
         payload: |
           email: ${{ steps.user_mapping.outputs.email }}
 
-    - name: Check Slack lookup success
-      if: inputs.github_user != ''
-      shell: bash
-      run: |
-        if [[ "$SLACK_OK" != "true" ]]; then
-          echo "Error: Failed to find Slack user for email: $USER_EMAIL"
-          exit 1
-        fi
-      env:
-        SLACK_OK: ${{ steps.slack_user.outputs.ok }}
-        USER_EMAIL: ${{ steps.user_mapping.outputs.email }}
-
     - name: Extract Slack user ID
-      if: inputs.github_user != ''
+      if: steps.slack_user.outputs.ok == 'true'
       id: user_id
       shell: bash
       run: |
@@ -64,13 +52,15 @@ runs:
       id: channel
       shell: bash
       run: |
-        if [[ -n "$GITHUB_USER_INPUT" ]]; then
+        # If we have a slack user ID, use it; otherwise fall back to channel
+        if [[ -n "$SLACK_USER_ID" ]]; then
           echo "value=$SLACK_USER_ID" >> $GITHUB_OUTPUT
+          echo "Sending to user: $SLACK_USER_ID"
         else
           echo "value=$CHANNEL_ID_INPUT" >> $GITHUB_OUTPUT
+          echo "Sending to channel: $CHANNEL_ID_INPUT"
         fi
       env:
-        GITHUB_USER_INPUT: ${{ inputs.github_user }}
         CHANNEL_ID_INPUT: ${{ inputs.channel_id }}
         SLACK_USER_ID: ${{ steps.user_id.outputs.slack_user_id }}
 
