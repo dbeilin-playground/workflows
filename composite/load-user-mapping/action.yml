@@ -39,8 +39,8 @@ runs:
         
         if [[ -z "$EMAIL" ]]; then
           echo "user_found=false" >> $GITHUB_OUTPUT
-          echo "email=" >> $GITHUB_OUTPUT
-          echo "::warning::No email mapping found for GitHub user: $GITHUB_USERNAME"
+          echo "email=$GITHUB_USERNAME" >> $GITHUB_OUTPUT
+          echo "::warning::No email mapping found for GitHub user: $GITHUB_USERNAME, falling back to GH username"
         else
           echo "user_found=true" >> $GITHUB_OUTPUT
           echo "email=$EMAIL" >> $GITHUB_OUTPUT
